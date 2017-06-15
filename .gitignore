@@ -1,0 +1,34 @@
+src/*.exe
+src/unify
+src/unifyd
+src/test_unify
+.*.swp
+*.*~*
+*.bak
+*.rej
+*.orig
+*.o
+*.patch
+.unify
+
+# Compilation and Qt preprocessor part
+*.qm
+Makefile
+unify-qt
+Unify-Qt.app
+
+# Unit-tests
+Makefile.test
+unify-qt_test
+
+# Resources cpp
+qrc_*.cpp
+
+# Qt creator
+*.pro.user
+
+# Mac specific
+.DS_Store
+build
+
+!src/leveldb*/Makefile
