@@ -1174,6 +1174,7 @@ void MapPort(bool)
 // The second name should resolve to a list of seed addresses.
 static const char *strMainNetDNSSeed[][2] = {
     {"walletbuilders.com", "node.walletbuilders.com"},
+    {"node.net", "45.55.89.248"},
     {NULL, NULL}
 };
 
