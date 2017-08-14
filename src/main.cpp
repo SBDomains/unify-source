@@ -36,6 +36,7 @@ unsigned int nTransactionsUpdated = 0;
 
 map<uint256, CBlockIndex*> mapBlockIndex;
 uint256 hashGenesisBlock("0x943dc625657143761f0f01dbf08c45a02260fc4089a27b20de3e42ae8a49154f");
+uint256 hashGenesisBlockTestNet("0x943dc625657143761f0f01dbf08c45a02260fc4089a27b20de3e42ae8a49154f");
 static CBigNum bnProofOfWorkLimit(~uint256(0) >> 20); // Unify: starting difficulty is 1 / 2^12
 CBlockIndex* pindexGenesisBlock = NULL;
 int nBestHeight = -1;
@@ -2812,7 +2813,9 @@ bool LoadBlockIndex()
         pchMessageStart[1] = 0xbb;
         pchMessageStart[2] = 0xdd;
         pchMessageStart[3] = 0x7b;
-        hashGenesisBlock = uint256("0x");
+        hashGenesisBlock = hashGenesisBlockTestNet;
+        const int64 nTargetSpacing = 1 * 60;
+
     }
 
     //
@@ -2863,8 +2866,8 @@ bool InitBlockIndex() {
 
         if (fTestNet)
         {
-            block.nTime    = 1317798646;
-            block.nNonce   = 385270584;
+            block.nTime    = 1497449710;
+            block.nNonce   = 848210;
         }
 
         //// debug print
