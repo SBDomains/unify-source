@@ -1195,7 +1195,8 @@ unsigned int static GetNextWorkRequired(const CBlockIndex* pindexLast, const CBl
         return nProofOfWorkLimit;
 		
 	////// // New algorithm as of 7/14/2017 00:00:00 GMT // //////	
-	if (pindexLast->nTime > 1499990400)
+//	if (pindexLast->nTime > 1499990400)
+	if (pindexLast->nHeight > 2211)
 		return DarkGravityWave(pindexLast, pblock);		
 	////// // ////////////////////////////////////////// // //////	
 
