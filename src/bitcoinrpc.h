@@ -18,6 +18,7 @@ class CReserveKey;
 #include "json/json_spirit_utils.h"
 
 #include "util.h"
+#include "checkpoints.h"
 
 // HTTP status codes
 enum HTTPStatusCode
@@ -64,6 +65,7 @@ enum RPCErrorCode
     RPC_WALLET_WRONG_ENC_STATE      = -15, // Command given in wrong wallet encryption state (encrypting an encrypted wallet etc.)
     RPC_WALLET_ENCRYPTION_FAILED    = -16, // Failed to encrypt the wallet
     RPC_WALLET_ALREADY_UNLOCKED     = -17, // Wallet is already unlocked
+    RPC_WALLET_ALREADY_UNLOCKED_STAKING_ONLY = -18, // Wallet is already unlocked for staking only
 };
 
 json_spirit::Object JSONRPCError(int code, const std::string& message);
@@ -132,6 +134,10 @@ extern int64 nWalletUnlockTime;
 extern int64 AmountFromValue(const json_spirit::Value& value);
 extern json_spirit::Value ValueFromAmount(int64 amount);
 extern double GetDifficulty(const CBlockIndex* blockindex = NULL);
+
+// PoS
+extern double GetPoSKernelPS();
+
 extern std::string HexBits(unsigned int nBits);
 extern std::string HelpRequiringPassphrase();
 extern void EnsureWalletIsUnlocked();
@@ -206,5 +212,13 @@ extern json_spirit::Value getblock(const json_spirit::Array& params, bool fHelp)
 extern json_spirit::Value gettxoutsetinfo(const json_spirit::Array& params, bool fHelp);
 extern json_spirit::Value gettxout(const json_spirit::Array& params, bool fHelp);
 extern json_spirit::Value verifychain(const json_spirit::Array& params, bool fHelp);
+
+// pos
+extern json_spirit::Value getstakinginfo(const json_spirit::Array& params, bool fHelp);
+extern json_spirit::Value getcheckpoint(const json_spirit::Array& params, bool fHelp);
+extern json_spirit::Value reservebalance(const json_spirit::Array& params, bool fHelp);
+extern json_spirit::Value getinterest(const json_spirit::Array& params, bool fHelp);
+
+extern json_spirit::Value getunconfirmedbalance(const json_spirit::Array& params, bool fHelp);
 
 #endif

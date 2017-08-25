@@ -6,6 +6,7 @@
 #include "txdb.h"
 #include "walletdb.h"
 #include "bitcoinrpc.h"
+#include "miner.h"
 #include "net.h"
 #include "init.h"
 #include "util.h"
@@ -36,6 +37,10 @@ CClientUIInterface uiInterface;
 #else
 #define MIN_CORE_FILEDESCRIPTORS 150
 #endif
+
+// ppcoin
+unsigned int nMinerSleep;
+enum Checkpoints::CPMode CheckpointsMode;
 
 // Used to pass flags to the Bind() function
 enum BindFlags {
@@ -298,8 +303,8 @@ std::string HelpMessage()
     string strUsage = _("Options:") + "\n" +
         "  -?                     " + _("This help message") + "\n" +
         "  -conf=<file>           " + _("Specify configuration file (default: unify.conf)") + "\n" +
-        "  -pid=<file>            " + _("Specify pid file (default: unifyd.pid)") + "\n" +
-        "  -gen                   " + _("Generate coins (default: 0)") + "\n" +
+        "  -pid=<file>            " + _("Specify pid file (default: unify.pid)") + "\n" +
+        "  -staking               " + _("Stake your coins to support network and gain reward (default: 1)") + "\n" +
         "  -datadir=<dir>         " + _("Specify data directory") + "\n" +
         "  -dbcache=<n>           " + _("Set database cache size in megabytes (default: 25)") + "\n" +
         "  -timeout=<n>           " + _("Specify connection timeout in milliseconds (default: 5000)") + "\n" +
@@ -358,6 +363,7 @@ std::string HelpMessage()
         "  -rpcthreads=<n>        " + _("Set the number of threads to service RPC calls (default: 4)") + "\n" +
         "  -blocknotify=<cmd>     " + _("Execute command when the best block changes (%s in cmd is replaced by block hash)") + "\n" +
         "  -walletnotify=<cmd>    " + _("Execute command when a wallet transaction changes (%s in cmd is replaced by TxID)") + "\n" +
+        "  -stakenotify=<cmd>     " + _("Execute command when a coinstake transaction is created (%s in cmd is replaced by TxID)") + "\n" +
         "  -spendzeroconfchange   " + _("Spend unconfirmed change when sending transactions (default: 1)") + "\n" +
         "  -alertnotify=<cmd>     " + _("Execute command when a relevant alert is received (%s in cmd is replaced by message)") + "\n" +
         "  -upgradewallet         " + _("Upgrade wallet to latest format") + "\n" +
@@ -368,7 +374,6 @@ std::string HelpMessage()
         "  -checklevel=<n>        " + _("How thorough the block verification is (0-4, default: 3)") + "\n" +
         "  -txindex               " + _("Maintain a full transaction index (default: 0)") + "\n" +
         "  -loadblock=<file>      " + _("Imports blocks from external blk000??.dat file") + "\n" +
-        "  -maxorphantx=<n>       " + _("Keep at most <n> unconnectable transactions in memory (default: 25)") + "\n" +
         "  -reindex               " + _("Rebuild block chain index from current blk000??.dat files") + "\n" +
         "  -par=<n>               " + _("Set the number of script verification threads (up to 16, 0 = auto, <0 = leave that many cores free, default: 0)") + "\n" +
 
@@ -504,6 +509,19 @@ bool AppInit2(boost::thread_group& threadGroup)
 
     // ********************************************************* Step 2: parameter interactions
 
+    nMinerSleep = GetArg("-minersleep", 1000);
+
+    CheckpointsMode = Checkpoints::STRICT;
+    std::string strCpMode = GetArg("-cppolicy", "strict");
+
+    if(strCpMode == "strict")
+        CheckpointsMode = Checkpoints::STRICT;
+
+    if(strCpMode == "advisory")
+        CheckpointsMode = Checkpoints::ADVISORY;
+
+    if(strCpMode == "permissive")
+        CheckpointsMode = Checkpoints::PERMISSIVE;
     fTestNet = GetBoolArg("-testnet");
     fBloomFilters = GetBoolArg("-bloomfilters", true);
     if (fBloomFilters)
@@ -819,6 +837,21 @@ bool AppInit2(boost::thread_group& threadGroup)
         }
     }
 
+    if (mapArgs.count("-reservebalance")) // ppcoin: reserve balance amount
+    {
+        if (!ParseMoney(mapArgs["-reservebalance"], nReserveBalance))
+        {
+            InitError(_("Invalid amount for -reservebalance=<amount>"));
+            return false;
+        }
+    }
+
+    if (mapArgs.count("-checkpointkey")) // ppcoin: checkpoint master priv key
+    {
+        if (!Checkpoints::SetCheckpointPrivKey(GetArg("-checkpointkey", "")))
+            InitError(_("Unable to sign checkpoint, wrong checkpointkey?\n"));
+    }
+
     BOOST_FOREACH(string strDest, mapMultiArgs["-seednode"])
         AddOneShot(strDest);
 
@@ -1130,7 +1163,7 @@ bool AppInit2(boost::thread_group& threadGroup)
 
     // Generate coins in the background
     if (pwalletMain)
-        GenerateBitcoins(GetBoolArg("-gen", false), pwalletMain);
+        GenerateBitcoins(GetBoolArg("-staking", true), pwalletMain);
 
     // ********************************************************* Step 12: finished
 
