@@ -12,6 +12,8 @@ using namespace std;
 void ScriptPubKeyToJSON(const CScript& scriptPubKey, Object& out);
 extern enum Checkpoints::CPMode CheckpointsMode;
 
+extern unsigned int nTargetSpacing;
+
 double GetDifficulty(const CBlockIndex* blockindex)
 {
     // Floating point number that is a multiple of the minimum difficulty,

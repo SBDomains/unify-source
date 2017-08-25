@@ -26,6 +26,7 @@ qrc_*.cpp
 
 # Qt creator
 *.pro.user
+build*
 
 # Mac specific
 .DS_Store

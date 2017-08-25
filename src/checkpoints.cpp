@@ -14,6 +14,8 @@
 // Unify: auto-select a checkpoint among the latest blocks
 static const int nCheckpointSpan = 10;
 
+extern unsigned int nTargetSpacing;
+
 namespace Checkpoints
 {
     typedef std::map<int, uint256> MapCheckpoints;

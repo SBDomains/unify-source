@@ -14,6 +14,8 @@
 using namespace json_spirit;
 using namespace std;
 
+extern unsigned int nTargetSpacing;
+
 #define printf OutputDebugStringF
 
 // Return average network hashes per second based on the last 'lookup' blocks,

@@ -59,6 +59,10 @@ bool fBenchmark = false;
 bool fTxIndex = false;
 unsigned int nCoinCacheSize = 5000;
 
+unsigned int nTargetSpacing = TARGETSPACING_1; //nTargetSpacing_v1;
+static const int64 nTargetTimespan = 10 * 60;
+static const int64 nInterval = nTargetTimespan / nTargetSpacing;
+
 /** Fees smaller than this (in satoshi) are considered zero fee (for transaction creation) */
 int64 CTransaction::nMinTxFee = 100000;
 /** Fees smaller than this (in satoshi) are considered zero fee (for relaying) */
@@ -1151,10 +1155,6 @@ int64 GetProofOfStakeReward(int64 nCoinAge, int64 nFees)
     return nSubsidy + nFees;
 }
 
-static const int64 nTargetTimespan = 10 * 60;
-const int64 nTargetSpacing = 5 * 60; //nTargetSpacing_v1;
-static const int64 nInterval = nTargetTimespan / nTargetSpacing;
-
 
 //
 // maximum nBits value could possible be required nTime after
@@ -1351,6 +1351,15 @@ unsigned int static GetPoSDifficulty(const CBlockIndex* pindexLast, const CBlock
 {
     if (fDebug)
 	      printf("New PoS Difficulty Protocol ACTIVE");
+
+    if (pindexBest->nHeight+1 >= LAST_POW_BLOCK)
+    {
+        nTargetSpacing = TARGETSPACING_2;
+    }
+    else
+    {
+        nTargetSpacing = TARGETSPACING_1;
+    }
 
 	CBigNum bnTargetLimit = bnProofOfWorkLimit;
 

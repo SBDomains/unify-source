@@ -72,8 +72,8 @@ static const int COINBASE_MATURITY_NEW = 20;
 static const int COINBASE_MATURITY_SWITCH = LAST_POW_BLOCK;
 
 /** Change block time from 5 minutes to 1 minute */
-const int nTargetSpacing_v1 = 5 * 60 ;
-const int nTargetSpacing_v2 = 1 * 60 ;
+const int TARGETSPACING_1 = 5 * 60 ;
+const int TARGETSPACING_2 = 1 * 60 ;
 
 /** Threshold for nLockTime: below this value it is interpreted as block number, otherwise as UNIX timestamp. */
 static const unsigned int LOCKTIME_THRESHOLD = 500000000; // Tue Nov  5 00:53:20 1985 UTC
@@ -133,7 +133,6 @@ extern unsigned int nCoinCacheSize;
 extern std::set<std::pair<COutPoint, unsigned int> > setStakeSeen;
 extern unsigned int nStakeMinAge;
 extern unsigned int nStakeMaxAge;
-extern const int64 nTargetSpacing;
 extern int64 nLastCoinStakeSearchInterval;
 extern int64 nReserveBalance;
 
