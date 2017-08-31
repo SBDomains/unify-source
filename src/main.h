@@ -61,8 +61,8 @@ static const int64 DUST_HARD_LIMIT = 1000;   // 0.00001 UNIFY mininput
 static const int64 MAX_MONEY = 18181818 * COIN;
 inline bool MoneyRange(int64 nValue) { return (nValue >= 0 && nValue <= MAX_MONEY); }
 
-// Unify PoS
-static const int LAST_POW_BLOCK = 120000;
+// Unify PoS - aiming for UTC 12pm sept3 2017
+static const int LAST_POW_BLOCK = 15924;
 //static const int64 COIN_YEAR_REWARD = 5 * CENT; // 5% per year
 
 /** Coinbase transaction outputs can only be spent after this number of new blocks (network rule) */
