@@ -1,6 +1,7 @@
 // Copyright (c) 2009-2010 Satoshi Nakamoto
 // Copyright (c) 2009-2014 The Bitcoin developers
 // Copyright (c) 2015 The Potcoin developers
+// Copyright (c) 2017 The Unify developers
 // Distributed under the MIT/X11 software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 #ifndef BITCOIN_MAIN_H
@@ -79,9 +80,6 @@ const int TARGETSPACING_2 = 1 * 60 ;
 static const unsigned int LOCKTIME_THRESHOLD = 500000000; // Tue Nov  5 00:53:20 1985 UTC
 /** Maximum number of script-checking threads allowed */
 static const int MAX_SCRIPTCHECK_THREADS = 16;
-// Start checking POW after block 44877 
-static const int64 CHECK_POW_FROM_NTIME = 1414964233;  // before genesis block at 1497449710
-
 #ifdef USE_UPNP
 static const int fHaveUPnP = true;
 #else
@@ -1658,7 +1656,7 @@ public:
         }
 
         // Check the header
-        if (GetBlockTime() > CHECK_POW_FROM_NTIME && IsProofOfWork() && !CheckProofOfWork(GetPoWHash(), nBits))
+        if (IsProofOfWork() && !CheckProofOfWork(GetPoWHash(), nBits))
             return error("CBlock::ReadFromDisk() : errors in block header");
 
         return true;

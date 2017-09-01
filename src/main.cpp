@@ -2493,7 +2493,7 @@ bool CBlock::CheckBlock(CValidationState &state, bool fCheckPOW, bool fCheckMerk
         return state.DoS(100, error("CheckBlock() : size limits failed"));
 
     // Check proof of work matches claimed amount
-    if (GetBlockTime() > CHECK_POW_FROM_NTIME && fCheckPOW && IsProofOfWork() && !CheckProofOfWork(GetPoWHash(), nBits))
+    if (fCheckPOW && IsProofOfWork() && !CheckProofOfWork(GetPoWHash(), nBits))
         return state.DoS(50, error("CheckBlock() : proof of work failed"));
 
     // Check timestamp
@@ -2746,7 +2746,7 @@ bool ProcessBlock(CValidationState &state, CNode* pfrom, CBlock* pblock, CDiskBl
         else
             bnRequired.SetCompact(ComputeMinWork(GetLastBlockIndex(pcheckpoint, false)->nBits, deltaTime));
 
-        if (pblock->GetBlockTime() > CHECK_POW_FROM_NTIME && bnNewBlock > bnRequired)
+        if (bnNewBlock > bnRequired)
             return state.DoS(100, error("ProcessBlock() : block with too little proof-of-%s", pblock->IsProofOfStake()? "stake" : "work"));
     }
 

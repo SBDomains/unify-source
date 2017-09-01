@@ -1037,7 +1037,7 @@ boost::filesystem::path GetDefaultDataDir()
     // Unix: ~/.bitcoin
 #ifdef WIN32
     // Windows
-    return GetSpecialFolderPath(CSIDL_APPDATA) / "Unify";
+    return GetSpecialFolderPath(CSIDL_APPDATA) / "UnifyV2";
 #else
     fs::path pathRet;
     char* pszHome = getenv("HOME");
@@ -1049,10 +1049,10 @@ boost::filesystem::path GetDefaultDataDir()
     // Mac
     pathRet /= "Library/Application Support";
     fs::create_directory(pathRet);
-    return pathRet / "Unify";
+    return pathRet / "UnifyV2";
 #else
     // Unix
-    return pathRet / ".unify";
+    return pathRet / ".unifyV2";
 #endif
 #endif
 }
