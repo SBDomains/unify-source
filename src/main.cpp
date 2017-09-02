@@ -1146,9 +1146,19 @@ int64 GetBlockValue(int nHeight, int64 nFees)
 // ppcoin: miner's coin stake reward based on coin age spent (coin-days)
 int64 GetProofOfStakeReward(int64 nCoinAge, int64 nFees)
 {
-    int64 nSubsidy = 1 * COIN;
+    int64 nSubsidy = 0 * COIN;
 
-
+    if (pindexBest->nHeight <= 1067124) // 2 years after PoS start
+    {
+      nSubsidy = 1 * COIN;
+    }
+    
+    else 
+    {
+      nSubsidy = 0.1 * COIN;
+    }
+	
+	
     if (fDebug && GetBoolArg("-printcreation"))
         printf("GetProofOfStakeReward(): create=%s nCoinAge=%"PRI64d"\n", FormatMoney(nSubsidy).c_str(), nCoinAge);
 
