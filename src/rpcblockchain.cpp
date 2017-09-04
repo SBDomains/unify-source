@@ -10,6 +10,9 @@ using namespace json_spirit;
 using namespace std;
 
 void ScriptPubKeyToJSON(const CScript& scriptPubKey, Object& out);
+extern enum Checkpoints::CPMode CheckpointsMode;
+
+extern unsigned int nTargetSpacing;
 
 double GetDifficulty(const CBlockIndex* blockindex)
 {
@@ -43,6 +46,17 @@ double GetDifficulty(const CBlockIndex* blockindex)
 }
 
 
+// PoS
+double GetPoSKernelPS()
+{
+    if (pindexBest == NULL || pindexBest->nHeight <= LAST_POW_BLOCK || !pindexBest->IsProofOfStake())
+        return 0;
+
+    double dStakeKernelsTriedAvg = GetDifficulty(pindexBest) * 4294967296.0; // 2^32
+    return dStakeKernelsTriedAvg / nTargetSpacing;
+}
+
+
 Object blockToJSON(const CBlock& block, const CBlockIndex* blockindex)
 {
     Object result;
@@ -67,6 +81,20 @@ Object blockToJSON(const CBlock& block, const CBlockIndex* blockindex)
         result.push_back(Pair("previousblockhash", blockindex->pprev->GetBlockHash().GetHex()));
     if (blockindex->pnext)
         result.push_back(Pair("nextblockhash", blockindex->pnext->GetBlockHash().GetHex()));
+
+    result.push_back(Pair("flags", strprintf("%s", blockindex->IsProofOfStake()? "proof-of-stake" : "proof-of-work")));
+    result.push_back(Pair("proofhash", blockindex->hashProof.GetHex()));
+    result.push_back(Pair("moneysupply", ValueFromAmount(blockindex->nMoneySupply)));
+
+    if (block.IsProofOfStake())
+    {
+        result.push_back(Pair("mint", ValueFromAmount(blockindex->nMint)));
+        result.push_back(Pair("entropybit", (int)blockindex->GetStakeEntropyBit()));
+        result.push_back(Pair("modifier", strprintf("%016"PRI64x, blockindex->nStakeModifier)));
+        result.push_back(Pair("modifierchecksum", strprintf("%08x", blockindex->nStakeModifierChecksum)));
+        result.push_back(Pair("signature", HexStr(block.vchBlockSig.begin(), block.vchBlockSig.end())));
+    }
+
     return result;
 }
 
@@ -96,7 +124,7 @@ Value getdifficulty(const Array& params, bool fHelp)
     if (fHelp || params.size() != 0)
         throw runtime_error(
             "getdifficulty\n"
-            "Returns the proof-of-work difficulty as a multiple of the minimum difficulty.");
+            "Returns the difficulty as a multiple of the minimum difficulty.");
 
     return GetDifficulty();
 }
@@ -106,8 +134,8 @@ Value settxfee(const Array& params, bool fHelp)
 {
     if (fHelp || params.size() < 1 || params.size() > 1)
         throw runtime_error(
-            "settxfee <amount LTC/KB>\n"
-            "<amount> is a real and is rounded to the nearest 0.00000001 LTC per KB");
+            "settxfee <amount UNIFY/kb>\n"
+            "<amount> is a real and is rounded to the nearest 0.00000001 UNIFY per kb");
 
     // Amount
     int64 nAmount = 0;
@@ -268,3 +296,32 @@ Value verifychain(const Array& params, bool fHelp)
     return VerifyDB(nCheckLevel, nCheckDepth);
 }
 
+// ppcoin: get information of sync-checkpoint
+Value getcheckpoint(const Array& params, bool fHelp)
+{
+    if (fHelp || params.size() != 0)
+        throw runtime_error(
+            "getcheckpoint\n"
+            "Show info of synchronized checkpoint.\n");
+
+    Object result;
+    CBlockIndex* pindexCheckpoint;
+
+    result.push_back(Pair("synccheckpoint", Checkpoints::hashSyncCheckpoint.ToString().c_str()));
+    pindexCheckpoint = mapBlockIndex[Checkpoints::hashSyncCheckpoint];
+    result.push_back(Pair("height", pindexCheckpoint->nHeight));
+    result.push_back(Pair("timestamp", DateTimeStrFormat(pindexCheckpoint->GetBlockTime()).c_str()));
+
+    // Check that the block satisfies synchronized checkpoint
+    if (CheckpointsMode == Checkpoints::STRICT)
+        result.push_back(Pair("policy", "strict"));
+    else if (CheckpointsMode == Checkpoints::ADVISORY)
+        result.push_back(Pair("policy", "advisory"));
+    else if (CheckpointsMode == Checkpoints::PERMISSIVE)
+        result.push_back(Pair("policy", "permissive"));
+
+    if (mapArgs.count("-checkpointkey"))
+        result.push_back(Pair("checkpointmaster", true));
+
+    return result;
+}

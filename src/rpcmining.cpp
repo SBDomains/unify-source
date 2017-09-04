@@ -1,15 +1,22 @@
 // Copyright (c) 2010 Satoshi Nakamoto
 // Copyright (c) 2009-2012 The Bitcoin developers
+// Copyright (c) 2014 The Potcoin developers
+// Copyright (c) 2014 The Unify developers
 // Distributed under the MIT/X11 software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
 #include "main.h"
 #include "db.h"
 #include "init.h"
+#include "miner.h"
 #include "bitcoinrpc.h"
 
 using namespace json_spirit;
 using namespace std;
+
+extern unsigned int nTargetSpacing;
+
+#define printf OutputDebugStringF
 
 // Return average network hashes per second based on the last 'lookup' blocks,
 // or from the last difficulty change if 'lookup' is nonpositive.
@@ -20,33 +27,24 @@ Value GetNetworkHashPS(int lookup, int height) {
     if (height >= 0 && height < nBestHeight)
         pb = FindBlockByHeight(height);
 
-    if (pb == NULL || !pb->nHeight)
+    if (pb == NULL || !pb->nHeight || pb->nHeight > LAST_POW_BLOCK)
         return 0;
 
     // If lookup is -1, then use blocks since last difficulty change.
     if (lookup <= 0)
-        lookup = pb->nHeight % 2016 + 1;
+        lookup = pb->nHeight % 120 + 1;
 
     // If lookup is larger than chain, then set it to chain length.
     if (lookup > pb->nHeight)
         lookup = pb->nHeight;
 
     CBlockIndex *pb0 = pb;
-    int64 minTime = pb0->GetBlockTime();
-    int64 maxTime = minTime;
     for (int i = 0; i < lookup; i++) {
         pb0 = pb0->pprev;
-        int64 time = pb0->GetBlockTime();
-        minTime = std::min(time, minTime);
-        maxTime = std::max(time, maxTime);
     }
 
-    // In case there's a situation where minTime == maxTime, we don't want a divide by zero exception.
-    if (minTime == maxTime)
-        return 0;
-
     uint256 workDiff = pb->nChainWork - pb0->nChainWork;
-    int64 timeDiff = maxTime - minTime;
+    int64 timeDiff = lookup * 60;
 
     return (boost::int64_t)(workDiff.getdouble() / timeDiff);
 }
@@ -60,7 +58,7 @@ Value getnetworkhashps(const Array& params, bool fHelp)
             "Pass in [blocks] to override # of blocks, -1 specifies since last difficulty change.\n"
             "Pass in [height] to estimate the network speed at the time when a certain block was found.");
 
-    return GetNetworkHashPS(params.size() > 0 ? params[0].get_int() : 120, params.size() > 1 ? params[1].get_int() : -1);
+    return GetNetworkHashPS(params.size() > 0 ? params[0].get_int() : 1, params.size() > 1 ? params[1].get_int() : -1);
 }
 
 
@@ -95,7 +93,7 @@ Value getgenerate(const Array& params, bool fHelp)
     if (!pMiningKey)
         return false;
 
-    return GetBoolArg("-gen");
+    return GetBoolArg("-staking");
 }
 
 
@@ -118,7 +116,7 @@ Value setgenerate(const Array& params, bool fHelp)
         if (nGenProcLimit == 0)
             fGenerate = false;
     }
-    mapArgs["-gen"] = (fGenerate ? "1" : "0");
+    mapArgs["-staking"] = (fGenerate ? "1" : "0");
 
     assert(pwalletMain != NULL);
     GenerateBitcoins(fGenerate, pwalletMain);
@@ -152,15 +150,59 @@ Value getmininginfo(const Array& params, bool fHelp)
     obj.push_back(Pair("currentblocktx",(uint64_t)nLastBlockTx));
     obj.push_back(Pair("difficulty",    (double)GetDifficulty()));
     obj.push_back(Pair("errors",        GetWarnings("statusbar")));
-    obj.push_back(Pair("generate",      GetBoolArg("-gen")));
-    obj.push_back(Pair("genproclimit",  (int)GetArg("-genproclimit", -1)));
+    obj.push_back(Pair("generate",      GetBoolArg("-staking")));
+    obj.push_back(Pair("genproclimit",  (int)GetArg("-genproclimit", 0)));
     obj.push_back(Pair("hashespersec",  gethashespersec(params, false)));
     obj.push_back(Pair("networkhashps", getnetworkhashps(params, false)));
     obj.push_back(Pair("pooledtx",      (uint64_t)mempool.size()));
     obj.push_back(Pair("testnet",       fTestNet));
+
+    // ppcoin
+    uint64 nAverageWeight = 0, nTotalWeight = 0;
+    pwalletMain->GetStakeWeight(*pwalletMain, nAverageWeight, nTotalWeight);
+    Object weight;
+    weight.push_back(Pair("average", (uint64_t)nAverageWeight));
+    weight.push_back(Pair("total",   (uint64_t)nTotalWeight));
+    obj.push_back(Pair("stakeweight", weight));
+//    obj.push_back(Pair("stakeinterest",  (uint64_t)COIN_YEAR_REWARD));
+    obj.push_back(Pair("netstakeweight", (uint64_t)GetPoSKernelPS()));
     return obj;
 }
 
+// ppcoin
+Value getstakinginfo(const Array& params, bool fHelp)
+{
+    if (fHelp || params.size() != 0)
+        throw runtime_error(
+            "getstakinginfo\n"
+            "Returns an object containing staking-related information.");
+
+    uint64 nAverageWeight = 0, nTotalWeight = 0;
+    pwalletMain->GetStakeWeight(*pwalletMain, nAverageWeight, nTotalWeight);
+
+    uint64 nNetworkWeight = GetPoSKernelPS();
+    bool staking = nLastCoinStakeSearchInterval && nAverageWeight;
+    uint64 nExpectedTime = nTargetSpacing * nNetworkWeight / nTotalWeight;
+
+    Object obj;
+
+    obj.push_back(Pair("enabled", GetBoolArg("-staking", true)));
+    obj.push_back(Pair("staking", staking));
+
+    obj.push_back(Pair("currentblocksize", (uint64_t)nLastBlockSize));
+    obj.push_back(Pair("currentblocktx", (uint64_t)nLastBlockTx));
+    obj.push_back(Pair("pooledtx", (uint64_t)mempool.size()));
+
+    obj.push_back(Pair("difficulty", (double)GetDifficulty(GetLastBlockIndex(pindexBest, true))));
+    obj.push_back(Pair("search-interval", (int)nLastCoinStakeSearchInterval));
+
+    obj.push_back(Pair("averageweight", (uint64_t)nAverageWeight));
+    obj.push_back(Pair("totalweight", (uint64_t)nTotalWeight));
+    obj.push_back(Pair("netstakeweight", (uint64_t)nNetworkWeight));
+    obj.push_back(Pair("expectedtime", staking ? (uint64_t)nExpectedTime : -1));
+
+    return obj;
+}
 
 Value getworkex(const Array& params, bool fHelp)
 {
@@ -175,6 +217,9 @@ Value getworkex(const Array& params, bool fHelp)
 
     if (IsInitialBlockDownload())
         throw JSONRPCError(RPC_CLIENT_IN_INITIAL_DOWNLOAD, "Unify is downloading blocks...");
+
+    if (pindexBest->nHeight >= LAST_POW_BLOCK)
+        throw JSONRPCError(RPC_MISC_ERROR, "No more PoW blocks");
 
     typedef map<uint256, pair<CBlock*, CScript> > mapNewBlock_t;
     static mapNewBlock_t mapNewBlock;    // FIXME: thread safety
@@ -271,7 +316,7 @@ Value getworkex(const Array& params, bool fHelp)
 
         if (vchData.size() != 128)
             throw JSONRPCError(RPC_INVALID_PARAMETER, "Invalid parameter");
-            
+
         CBlock* pdata = (CBlock*)&vchData[0];
 
         // Byte reverse
@@ -315,6 +360,9 @@ Value getwork(const Array& params, bool fHelp)
 
     if (IsInitialBlockDownload())
         throw JSONRPCError(RPC_CLIENT_IN_INITIAL_DOWNLOAD, "Unify is downloading blocks...");
+
+    if (pindexBest->nHeight >= LAST_POW_BLOCK)
+        throw JSONRPCError(RPC_MISC_ERROR, "No more PoW blocks");
 
     typedef map<uint256, pair<CBlock*, CScript> > mapNewBlock_t;
     static mapNewBlock_t mapNewBlock;    // FIXME: thread safety
@@ -369,6 +417,10 @@ Value getwork(const Array& params, bool fHelp)
         // Save
         mapNewBlock[pblock->hashMerkleRoot] = make_pair(pblock, pblock->vtx[0].vin[0].scriptSig);
 
+        printf("getwork : sent     ver=%d, nTime=%u, nNonce=%u\n", pblock->nVersion, pblock->nTime, pblock->nNonce);
+        printf("getwork : sent     hashPrevBlock =%s\n", pblock->hashPrevBlock.ToString().c_str());
+        printf("getwork : sent     hashMerkleRoot=%s\n", pblock->hashMerkleRoot.ToString().c_str());
+
         // Pre-build hash buffers
         char pmidstate[32];
         char pdata[128];
@@ -397,6 +449,10 @@ Value getwork(const Array& params, bool fHelp)
             ((unsigned int*)pdata)[i] = ByteReverse(((unsigned int*)pdata)[i]);
 
         // Get saved block
+        printf("getwork : received ver=%d, nTime=%u, nNonce=%u\n", pdata->nVersion, pdata->nTime, pdata->nNonce);
+        printf("getwork : received hashPrevBlock =%s\n", pdata->hashPrevBlock.ToString().c_str());
+        printf("getwork : received hashMerkleRoot=%s\n", pdata->hashMerkleRoot.ToString().c_str());
+
         if (!mapNewBlock.count(pdata->hashMerkleRoot))
             return false;
         CBlock* pblock = mapNewBlock[pdata->hashMerkleRoot].first;
@@ -406,7 +462,12 @@ Value getwork(const Array& params, bool fHelp)
         pblock->vtx[0].vin[0].scriptSig = mapNewBlock[pdata->hashMerkleRoot].second;
         pblock->hashMerkleRoot = pblock->BuildMerkleTree();
 
+        printf("getwork : check    ver=%d, nTime=%u, nNonce=%u\n", pblock->nVersion, pblock->nTime, pblock->nNonce);
+        printf("getwork : check    hashPrevBlock =%s\n", pblock->hashPrevBlock.ToString().c_str());
+        printf("getwork : check    hashMerkleRoot=%s\n", pblock->hashMerkleRoot.ToString().c_str());
+
         assert(pwalletMain != NULL);
+        printf("getwork: about to call CheckWork()\n");
         return CheckWork(pblock, *pwalletMain, *pMiningKey);
     }
 }
@@ -457,6 +518,9 @@ Value getblocktemplate(const Array& params, bool fHelp)
 
     if (IsInitialBlockDownload())
         throw JSONRPCError(RPC_CLIENT_IN_INITIAL_DOWNLOAD, "Unify is downloading blocks...");
+
+    if (pindexBest->nHeight >= LAST_POW_BLOCK)
+        throw JSONRPCError(RPC_MISC_ERROR, "No more PoW blocks");
 
     // Update block
     static unsigned int nTransactionsUpdatedLast;

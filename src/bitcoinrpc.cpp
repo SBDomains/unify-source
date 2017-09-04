@@ -93,7 +93,7 @@ void RPCTypeCheck(const Object& o,
 int64 AmountFromValue(const Value& value)
 {
     double dAmount = value.get_real();
-    if (dAmount <= 0.0 || dAmount > 84000000.0)
+    if (dAmount <= 0.0 || dAmount > (double)(MAX_MONEY / COIN))
         throw JSONRPCError(RPC_TYPE_ERROR, "Invalid amount");
     int64 nAmount = roundint64(dAmount * COIN);
     if (!MoneyRange(nAmount))
@@ -266,6 +266,12 @@ static const CRPCCommand vRPCCommands[] =
     { "lockunspent",            &lockunspent,            false,     false,      true },
     { "listlockunspent",        &listlockunspent,        false,     false,      true },
     { "verifychain",            &verifychain,            true,      false,      false },
+    { "getunconfirmedbalance",  &getunconfirmedbalance,  false,     false,      true },
+    // pos
+    { "getstakinginfo",         &getstakinginfo,         true,      false,      false },
+    { "getcheckpoint",          &getcheckpoint,          true,      true,       false },
+    { "reservebalance",         &reservebalance,         false,     false,      false },
+    { "getinterest",            &getinterest,            false,     false,      true },
 };
 
 CRPCTable::CRPCTable()
@@ -1172,6 +1178,7 @@ Array RPCConvertValues(const std::string &strMethod, const std::vector<std::stri
     if (strMethod == "listtransactions"       && n > 2) ConvertTo<boost::int64_t>(params[2]);
     if (strMethod == "listaccounts"           && n > 0) ConvertTo<boost::int64_t>(params[0]);
     if (strMethod == "walletpassphrase"       && n > 1) ConvertTo<boost::int64_t>(params[1]);
+    if (strMethod == "walletpassphrase"       && n > 2) ConvertTo<bool>(params[2]);
     if (strMethod == "getblocktemplate"       && n > 0) ConvertTo<Object>(params[0]);
     if (strMethod == "listsinceblock"         && n > 1) ConvertTo<boost::int64_t>(params[1]);
     if (strMethod == "sendmany"               && n > 1) ConvertTo<Object>(params[1]);
@@ -1197,6 +1204,10 @@ Array RPCConvertValues(const std::string &strMethod, const std::vector<std::stri
     if (strMethod == "importprivkey"          && n > 2) ConvertTo<bool>(params[2]);
     if (strMethod == "verifychain"            && n > 0) ConvertTo<boost::int64_t>(params[0]);
     if (strMethod == "verifychain"            && n > 1) ConvertTo<boost::int64_t>(params[1]);
+    if (strMethod == "reservebalance"         && n > 0) ConvertTo<bool>(params[0]);
+    if (strMethod == "reservebalance"         && n > 1) ConvertTo<double>(params[1]);
+    if (strMethod == "getinterest"            && n > 0) ConvertTo<boost::int64_t>(params[0]);
+    if (strMethod == "getinterest"            && n > 1) ConvertTo<boost::int64_t>(params[1]);
 
     return params;
 }

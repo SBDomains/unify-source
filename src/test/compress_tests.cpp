@@ -15,7 +15,7 @@
 #define NUM_MULTIPLES_1BTC 10000
 
 // amounts 50 .. 21000000
-#define NUM_MULTIPLES_50BTC 420000
+#define NUM_MULTIPLES_50BTC 186500
 
 using namespace std;
 

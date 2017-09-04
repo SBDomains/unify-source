@@ -1,7 +1,7 @@
 TEMPLATE = app
 TARGET = unify-qt
 macx:TARGET = "Unify-Qt"
-VERSION = 0.8.7.5
+VERSION = 1.2.0.0
 INCLUDEPATH += src src/json src/qt
 QT += core gui network
 greaterThan(QT_MAJOR_VERSION, 4): QT += widgets
@@ -18,25 +18,6 @@ CONFIG += thread
 # Dependency library locations can be customized with:
 #    BOOST_INCLUDE_PATH, BOOST_LIB_PATH, BDB_INCLUDE_PATH,
 #    BDB_LIB_PATH, OPENSSL_INCLUDE_PATH and OPENSSL_LIB_PATH respectively
-win32 {
-windows:LIBS += -lshlwapi
-LIBS += $$join(BOOST_LIB_PATH,,-L,) $$join(BDB_LIB_PATH,,-L,) $$join(OPENSSL_LIB_PATH,,-L,) $$join(QRENCODE_LIB_PATH,,-L,)
-LIBS += -lssl -lcrypto -ldb_cxx$$BDB_LIB_SUFFIX
-windows:LIBS += -lws2_32 -lole32 -loleaut32 -luuid -lgdi32
-LIBS += -lboost_system-mgw46-mt-sd-1_53 -lboost_filesystem-mgw46-mt-sd-1_53 -lboost_program_options-mgw46-mt-sd-1_53 -lboost_thread-mgw46-mt-sd-1_53
-BOOST_LIB_SUFFIX=-mgw46-mt-sd-1_53
-BOOST_INCLUDE_PATH=C:/deps/boost_1_53_0
-BOOST_LIB_PATH=C:/deps/boost_1_53_0/stage/lib
-BDB_INCLUDE_PATH=c:/deps/db-4.8.30.NC/build_unix
-BDB_LIB_PATH=c:/deps/db-4.8.30.NC/build_unix
-OPENSSL_INCLUDE_PATH=c:/deps/openssl-1.0.2d/include
-OPENSSL_LIB_PATH=c:/deps/openssl-1.0.2d
-MINIUPNPC_INCLUDE_PATH=C:/deps/
-MINIUPNPC_LIB_PATH=C:/deps/miniupnpc
-QRENCODE_INCLUDE_PATH=C:/deps/qrencode-3.4.4
-QRENCODE_LIB_PATH=C:/deps/qrencode-3.4.4/.libs
-}
-
 
 OBJECTS_DIR = build
 MOC_DIR = build
@@ -51,7 +32,7 @@ contains(RELEASE, 1) {
 
     !win32:!macx {
         # Linux: static link and extra security (see: https://wiki.debian.org/Hardening)
-        LIBS += -Wl,-Bstatic
+        LIBS += -Wl,-Bstatic -Wl,-z,relro -Wl,-z,now
     }
 }
 
@@ -122,6 +103,7 @@ contains(BITCOIN_NEED_QT_PLUGINS, 1) {
 
 INCLUDEPATH += src/leveldb/include src/leveldb/helpers
 LIBS += $$PWD/src/leveldb/libleveldb.a $$PWD/src/leveldb/libmemenv.a
+SOURCES += src/txdb-leveldb.cpp
 !win32 {
     # we use QMAKE_CXXFLAGS_RELEASE even without RELEASE=1 because we use RELEASE to indicate linking preferences not -O preferences
     genleveldb.commands = cd $$PWD/src/leveldb && CC=$$QMAKE_CC CXX=$$QMAKE_CXX $(MAKE) OPT=\"$$QMAKE_CXXFLAGS $$QMAKE_CXXFLAGS_RELEASE\" libleveldb.a libmemenv.a
@@ -131,7 +113,7 @@ LIBS += $$PWD/src/leveldb/libleveldb.a $$PWD/src/leveldb/libmemenv.a
         QMAKE_RANLIB = $$replace(QMAKE_STRIP, strip, ranlib)
     }
     LIBS += -lshlwapi
-    #genleveldb.commands = cd $$PWD/src/leveldb && CC=$$QMAKE_CC CXX=$$QMAKE_CXX TARGET_OS=OS_WINDOWS_CROSSCOMPILE $(MAKE) OPT=\"$$QMAKE_CXXFLAGS $$QMAKE_CXXFLAGS_RELEASE\" libleveldb.a libmemenv.a && $$QMAKE_RANLIB $$PWD/src/leveldb/libleveldb.a && $$QMAKE_RANLIB $$PWD/src/leveldb/libmemenv.a
+    genleveldb.commands = cd $$PWD/src/leveldb && CC=$$QMAKE_CC CXX=$$QMAKE_CXX TARGET_OS=OS_WINDOWS_CROSSCOMPILE $(MAKE) OPT=\"$$QMAKE_CXXFLAGS $$QMAKE_CXXFLAGS_RELEASE\" libleveldb.a libmemenv.a && $$QMAKE_RANLIB $$PWD/src/leveldb/libleveldb.a && $$QMAKE_RANLIB $$PWD/src/leveldb/libmemenv.a
 }
 genleveldb.target = $$PWD/src/leveldb/libleveldb.a
 genleveldb.depends = FORCE
@@ -177,11 +159,14 @@ HEADERS += src/qt/bitcoingui.h \
     src/util.h \
     src/hash.h \
     src/uint256.h \
+    src/kernel.h \
     src/serialize.h \
     src/main.h \
+    src/miner.h \
     src/net.h \
     src/key.h \
     src/db.h \
+    src/txdb.h \
     src/walletdb.h \
     src/script.h \
     src/init.h \
@@ -262,6 +247,7 @@ SOURCES += src/qt/bitcoin.cpp \
     src/key.cpp \
     src/script.cpp \
     src/main.cpp \
+    src/miner.cpp \
     src/init.cpp \
     src/net.cpp \
     src/bloom.cpp \
@@ -307,6 +293,7 @@ SOURCES += src/qt/bitcoin.cpp \
     src/qt/rpcconsole.cpp \
     src/scrypt.cpp \
     src/noui.cpp \
+    src/kernel.cpp \
     src/leveldb.cpp \
     src/txdb.cpp \
     src/qt/splashscreen.cpp
@@ -386,11 +373,12 @@ OTHER_FILES += README.md \
 # platform specific defaults, if not overridden on command line
 isEmpty(BOOST_LIB_SUFFIX) {
     macx:BOOST_LIB_SUFFIX = -mt
-    win32:BOOST_LIB_SUFFIX = -mgw44-mt-s-1_50
+    windows:BOOST_LIB_SUFFIX = -mt
 }
 
 isEmpty(BOOST_THREAD_LIB_SUFFIX) {
-    BOOST_THREAD_LIB_SUFFIX = $$BOOST_LIB_SUFFIX
+    win32:BOOST_THREAD_LIB_SUFFIX = _win32$$BOOST_LIB_SUFFIX
+    else:BOOST_THREAD_LIB_SUFFIX = $$BOOST_LIB_SUFFIX
 }
 
 isEmpty(BDB_LIB_PATH) {
@@ -442,14 +430,14 @@ macx:ICON = src/qt/res/icons/unify.icns
 macx:QMAKE_CFLAGS_THREAD += -pthread
 macx:QMAKE_LFLAGS_THREAD += -pthread
 macx:QMAKE_CXXFLAGS_THREAD += -pthread
-macx:QMAKE_INFO_PLIST = share/qt/Info.plist
+#macx:QMAKE_INFO_PLIST = share/qt/Info.plist
 
 # Set libraries and includes at end, to use platform-defined defaults if not overridden
 INCLUDEPATH += $$BOOST_INCLUDE_PATH $$BDB_INCLUDE_PATH $$OPENSSL_INCLUDE_PATH $$QRENCODE_INCLUDE_PATH
 LIBS += $$join(BOOST_LIB_PATH,,-L,) $$join(BDB_LIB_PATH,,-L,) $$join(OPENSSL_LIB_PATH,,-L,) $$join(QRENCODE_LIB_PATH,,-L,)
 LIBS += -lssl -lcrypto -ldb_cxx$$BDB_LIB_SUFFIX
 # -lgdi32 has to happen after -lcrypto (see  #681)
-win32:LIBS += -lws2_32 -lshlwapi -lmswsock -lole32 -loleaut32 -luuid -lgdi32
+win32:LIBS += -lws2_32 -lshlwapi -lmswsock -lole32 -loleaut32 -luuid -lgdi32 -lpthread
 LIBS += -lboost_system$$BOOST_LIB_SUFFIX -lboost_filesystem$$BOOST_LIB_SUFFIX -lboost_program_options$$BOOST_LIB_SUFFIX -lboost_thread$$BOOST_THREAD_LIB_SUFFIX
 win32:LIBS += -lboost_chrono$$BOOST_LIB_SUFFIX
 macx:LIBS += -lboost_chrono$$BOOST_LIB_SUFFIX

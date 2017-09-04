@@ -91,7 +91,7 @@ static void InitMessage(const std::string &message)
 {
     if(splashref)
     {
-        splashref->showMessage(QString::fromStdString(message), Qt::AlignBottom|Qt::AlignHCenter, QColor(55,55,55));
+        splashref->showMessage(QString::fromStdString(message), Qt::AlignBottom|Qt::AlignHCenter, QColor(255,255,255));
         qApp->processEvents();
     }
     printf("init message: %s\n", message.c_str());
@@ -209,7 +209,7 @@ int main(int argc, char *argv[])
 #ifdef Q_OS_MAC
     // on mac, also change the icon now because it would look strange to have a testnet splash (green) and a std app icon (orange)
     if(GetBoolArg("-testnet")) {
-        MacDockIconHandler::instance()->setIcon(QIcon(":icons/bitcoin_testnet"));
+        MacDockIconHandler::instance()->setIcon(QIcon(":icons/unify_testnet"));
     }
 #endif
 

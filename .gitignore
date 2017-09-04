@@ -13,9 +13,10 @@ src/test_unify
 
 # Compilation and Qt preprocessor part
 *.qm
-Makefile
+Makefile*.*
 unify-qt
 Unify-Qt.app
+object*.*
 
 # Unit-tests
 Makefile.test
@@ -26,6 +27,7 @@ qrc_*.cpp
 
 # Qt creator
 *.pro.user
+build*
 
 # Mac specific
 .DS_Store

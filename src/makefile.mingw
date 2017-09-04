@@ -20,8 +20,8 @@ CXX ?= g++
 USE_UPNP:=-
 USE_IPV6:=1
 
-DEPSDIR?=/usr/local
-BOOST_SUFFIX?=-mgw46-mt-sd-1_52
+DEPSDIR?=/c/deps
+BOOST_SUFFIX?=-mgw48-mt-s-1_55
 
 INCLUDEPATHS= \
  -I"$(CURDIR)" \
@@ -81,6 +81,7 @@ OBJS= \
     obj/init.o \
     obj/keystore.o \
     obj/main.o \
+    obj/miner.o \
     obj/net.o \
     obj/protocol.o \
     obj/bitcoinrpc.o \
@@ -99,6 +100,7 @@ OBJS= \
     obj/hash.o \
     obj/bloom.o \
     obj/noui.o \
+    obj/kernel.o \
     obj/leveldb.o \
     obj/txdb.o
 
@@ -118,10 +120,10 @@ test check: test_unify.exe FORCE
 #
 DEFS += $(addprefix -I,$(CURDIR)/leveldb/include)
 DEFS += $(addprefix -I,$(CURDIR)/leveldb/helpers)
-
+OBJS += obj/txdb-leveldb.o
 leveldb/libleveldb.a:
 	cd leveldb && $(MAKE) CC=$(CC) CXX=$(CXX) OPT="$(CFLAGS)" TARGET_OS=NATIVE_WINDOWS libleveldb.a libmemenv.a && cd ..
-
+obj/txdb-leveldb.o: leveldb/libleveldb.a
 obj/%-sse2.o: %-sse2.cpp
 	$(CXX) -c $(CFLAGS) -msse2 -mstackrealign -o $@ $<
 

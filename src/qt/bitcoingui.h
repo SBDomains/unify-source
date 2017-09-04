@@ -36,6 +36,8 @@ class QPushButton;
 class QAction;
 QT_END_NAMESPACE
 
+typedef unsigned long long uint64;
+
 /**
   Bitcoin GUI main class. This class represents the main window of the Bitcoin UI. It communicates with both the client and
   wallet models to give the user an up-to-date view of the current core state.
@@ -84,6 +86,7 @@ private:
     WalletFrame *walletFrame;
 
     QLabel *labelEncryptionIcon;
+    QLabel *labelStakingIcon;
     QLabel *labelConnectionsIcon;
     QLabel *labelBlocksIcon;
     QLabel *progressBarLabel;
@@ -104,6 +107,8 @@ private:
     QAction *encryptWalletAction;
     QAction *backupWalletAction;
     QAction *changePassphraseAction;
+    QAction *unlockWalletAction;
+    QAction *lockWalletAction;
     QAction *aboutQtAction;
     QAction *openRPCConsoleAction;
 
@@ -115,6 +120,10 @@ private:
     QMovie *syncIconMovie;
     /** Keep track of previous number of blocks, to detect progress */
     int prevBlocks;
+
+    /** local weight for staking */
+    uint64 nAverageWeight;
+    uint64 nTotalWeight;
 
     /** Create the main UI actions. */
     void createActions();
@@ -187,15 +196,16 @@ private slots:
     void optionsClicked();
     /** Show about dialog */
     void aboutClicked();
-#ifndef Q_OS_MAC
     /** Handle tray icon clicked */
     void trayIconActivated(QSystemTrayIcon::ActivationReason reason);
-#endif
 
     /** Show window if hidden, unminimize when minimized, rise when obscured or show if hidden and fToggleHidden is true */
     void showNormalIfMinimized(bool fToggleHidden = false);
     /** Simply calls showNormalIfMinimized(true) for use in SLOT() macro */
     void toggleHidden();
+
+    void updateWeight();
+    void updateStakingIcon();
 
     /** called by a timer to check if fRequestShutdown has been set **/
     void detectShutdown();

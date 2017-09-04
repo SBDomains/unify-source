@@ -27,10 +27,6 @@ class CBlockIndex;
 extern int nBestHeight;
 
 
-/** The maximum number of entries in an 'inv' protocol message */
-static const unsigned int MAX_INV_SZ = 50000;
-/** The maximum number of entries in mapAskFor */
-static const size_t MAPASKFOR_MAX_SZ = MAX_INV_SZ;
 
 inline unsigned int ReceiveFloodSize() { return 1000*GetArg("-maxreceivebuffer", 5*1000); }
 inline unsigned int SendBufferSize() { return 1000*GetArg("-maxsendbuffer", 1*1000); }
@@ -223,6 +219,7 @@ public:
     std::set<CAddress> setAddrKnown;
     bool fGetAddr;
     std::set<uint256> setKnown;
+    uint256 hashCheckpointKnown; // ppcoin: known sent sync-checkpoint
 
     // inventory based relay
     mruset<CInv> setInventoryKnown;
@@ -262,6 +259,7 @@ public:
         fStartSync = false;
         fGetAddr = false;
         nMisbehavior = 0;
+        hashCheckpointKnown = 0;
         fRelayTxes = false;
         setInventoryKnown.max_size(SendBufferSize() / 1000);
         pfilter = new CBloomFilter();
@@ -361,9 +359,6 @@ public:
 
     void AskFor(const CInv& inv)
     {
-        if (mapAskFor.size() > MAPASKFOR_MAX_SZ)
-            return;
-
         // We're using mapAskFor as a priority queue,
         // the key is the earliest time the request can be sent
         int64 nRequestTime;
