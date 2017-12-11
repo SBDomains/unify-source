@@ -1,7 +1,7 @@
 Unify integration/staging tree
 ================================
 
-http://www.unifycryptocurrency.com
+https://www.unify.today
 
 Copyright (c) 2009-2017 Bitcoin Developers
 Copyright (c) 2017 Unify Developers
@@ -9,15 +9,14 @@ Copyright (c) 2017 Unify Developers
 What is Unify?
 ----------------
 
-Unify is a lite version of Bitcoin using scrypt as a proof-of-work algorithm.
- - 5 minute block targets
- - subsidy halves in 3000 blocks
- - ~18,181,181 million total coins
- - 3000 coins per block
+Unify is a lite version of Bitcoin using proof-of-stake algorithm.
+ - 1 minute block targets
+ - 19,276,800 total coins
+ - 1 coin per block + possible additional fee
  - 3000 blocks to retarget difficulty
 
 For more information, as well as an immediately useable, binary version of
-the Unify client sofware, see http://www.unifycryptocurrency.com.
+the Unify client sofware, see https://www.unify.today.
 
 License
 -------
