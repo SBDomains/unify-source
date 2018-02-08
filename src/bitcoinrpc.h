@@ -221,7 +221,7 @@ extern json_spirit::Value getinterest(const json_spirit::Array& params, bool fHe
 
 extern json_spirit::Value getunconfirmedbalance(const json_spirit::Array& params, bool fHelp);
 
-// ihook98
+// ihook98 2018-02-08
 extern json_spirit::Value getbalancefromaddress(const json_spirit::Array& params, bool fHelp);
 extern json_spirit::Value sendfromaddress(const json_spirit::Array& params, bool fHelp);
 #endif

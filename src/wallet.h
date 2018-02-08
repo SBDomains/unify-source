@@ -202,7 +202,7 @@ public:
     std::string SendMoney(CScript scriptPubKey, int64 nValue, CWalletTx& wtxNew, bool fAskFee=false);
     std::string SendMoneyToDestination(const CTxDestination &address, int64 nValue, CWalletTx& wtxNew, bool fAskFee=false);
 
-    // ihook98
+    // ihook98 2018-02-08
     void AvailableCoinsByAddress(const CTxDestination &fromAddress, std::vector<COutput>& vCoins, bool fOnlyConfirmed=true, const CCoinControl *coinControl=NULL) const;
     bool SelectCoinsFromAddress(const CTxDestination &fromAddress, int64 nTargetValue, std::set<std::pair<const CWalletTx*,unsigned int> >& setCoinsRet, int64& nValueRet, const CCoinControl *coinControl=NULL) const;
     bool CreateTransaction(const CTxDestination &fromAddress, CScript scriptPubKey, int64 nValue,

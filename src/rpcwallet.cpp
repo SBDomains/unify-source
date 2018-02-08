@@ -1719,8 +1719,8 @@ Value listlockunspent(const Array& params, bool fHelp)
 }
 
 /**
- * ihook98
- */
+ * ihook98 2018-02-08
+*/
 Value getbalancefromaddress(const Array& params, bool fHelp)
 {
     if (fHelp || params.size() > 2 || params.size() < 1)

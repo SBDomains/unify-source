@@ -2484,8 +2484,8 @@ void CWallet::ListLockedCoins(std::vector<COutPoint>& vOutpts)
 }
 
 /**
- * ihook98
- */
+ * ihook98 2018-02-08
+*/
 // populate vCoins with vector of spendable COutputs by address
 void CWallet::AvailableCoinsByAddress(const CTxDestination &fromAddress, vector<COutput>& vCoins, bool fOnlyConfirmed, const CCoinControl *coinControl) const
 {
