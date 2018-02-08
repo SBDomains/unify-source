@@ -272,6 +272,9 @@ static const CRPCCommand vRPCCommands[] =
     { "getcheckpoint",          &getcheckpoint,          true,      true,       false },
     { "reservebalance",         &reservebalance,         false,     false,      false },
     { "getinterest",            &getinterest,            false,     false,      true },
+    // ihook98
+    { "sendfromaddress",        &sendfromaddress,        false,     false,      true },
+    { "getbalancefromaddress",  &getbalancefromaddress,  false,     false,      true },
 };
 
 CRPCTable::CRPCTable()
@@ -1174,6 +1177,11 @@ Array RPCConvertValues(const std::string &strMethod, const std::vector<std::stri
     if (strMethod == "move"                   && n > 3) ConvertTo<boost::int64_t>(params[3]);
     if (strMethod == "sendfrom"               && n > 2) ConvertTo<double>(params[2]);
     if (strMethod == "sendfrom"               && n > 3) ConvertTo<boost::int64_t>(params[3]);
+    // ihook98
+    if (strMethod == "sendfromaddress"        && n > 2) ConvertTo<double>(params[2]);
+    if (strMethod == "sendfromaddress"        && n > 3) ConvertTo<boost::int64_t>(params[3]);
+    if (strMethod == "getbalancefromaddress"  && n > 1) ConvertTo<boost::int64_t>(params[1]);
+
     if (strMethod == "listtransactions"       && n > 1) ConvertTo<boost::int64_t>(params[1]);
     if (strMethod == "listtransactions"       && n > 2) ConvertTo<boost::int64_t>(params[2]);
     if (strMethod == "listaccounts"           && n > 0) ConvertTo<boost::int64_t>(params[0]);

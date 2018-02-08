@@ -499,11 +499,9 @@ Value getreceivedbyaccount(const Array& params, bool fHelp)
     return (double)nAmount / (double)COIN;
 }
 
-
 int64 GetAccountBalance(CWalletDB& walletdb, const string& strAccount, int nMinDepth)
 {
     int64 nBalance = 0;
-
     // Tally wallet transactions
     for (map<uint256, CWalletTx>::iterator it = pwalletMain->mapWallet.begin(); it != pwalletMain->mapWallet.end(); ++it)
     {
@@ -513,7 +511,6 @@ int64 GetAccountBalance(CWalletDB& walletdb, const string& strAccount, int nMinD
 
         int64 nReceived, nSent, nFee;
         wtx.GetAccountAmounts(strAccount, nReceived, nSent, nFee);
-
         if (nReceived != 0 && wtx.GetDepthInMainChain() >= nMinDepth)
             nBalance += nReceived;
         nBalance -= nSent + nFee;
@@ -521,7 +518,6 @@ int64 GetAccountBalance(CWalletDB& walletdb, const string& strAccount, int nMinD
 
     // Tally internal accounting entries
     nBalance += walletdb.GetAccountCreditDebit(strAccount);
-
     return nBalance;
 }
 
@@ -576,9 +572,9 @@ Value getbalance(const Array& params, bool fHelp)
     }
 
     string strAccount = AccountFromValue(params[0]);
+    string* account = &strAccount;
 
-    int64 nBalance = GetAccountBalance(strAccount, nMinDepth);
-
+    int64 nBalance = pwalletMain->GetLegacyBalance(nMinDepth, account);
     return ValueFromAmount(nBalance);
 }
 
@@ -1720,4 +1716,71 @@ Value listlockunspent(const Array& params, bool fHelp)
     }
 
     return ret;
+}
+
+/**
+ * ihook98
+ */
+Value getbalancefromaddress(const Array& params, bool fHelp)
+{
+    if (fHelp || params.size() > 2 || params.size() < 1)
+        throw runtime_error(
+            "getbalancefromaddress unifyaddress [minconf=1]\n"
+            "Returns the balance in the unifyaddress.");
+
+    CBitcoinAddress address(params[0].get_str());
+    if (!address.IsValid())
+        throw JSONRPCError(RPC_INVALID_ADDRESS_OR_KEY, "Invalid Unify address");
+
+    int nMinDepth = 1;
+    if (params.size() > 1)
+        nMinDepth = params[1].get_int();
+
+    int64 nBalance = pwalletMain->GetAddressBalance(address.Get());
+    return ValueFromAmount(nBalance);
+}
+
+Value sendfromaddress(const Array& params, bool fHelp)
+{
+    if (fHelp || params.size() < 3 || params.size() > 6)
+        throw runtime_error(
+            "sendfromaddress <fromunifyaddress> <tounifyaddress> <amount> [minconf=1] [comment] [comment-to]\n"
+            "<amount> is a real and is rounded to the nearest 0.00000001"
+            + HelpRequiringPassphrase());
+
+    string strAccount;
+    CBitcoinAddress fromAddress(params[0].get_str());
+    CBitcoinAddress address(params[1].get_str());
+    if (!address.IsValid() || !fromAddress.IsValid())
+        throw JSONRPCError(RPC_INVALID_ADDRESS_OR_KEY, "Invalid Unify address");
+    // Get account from address
+    map<CTxDestination, string>::iterator mi = pwalletMain->mapAddressBook.find(fromAddress.Get());
+    if(mi != pwalletMain->mapAddressBook.end() && !(*mi).second.empty())
+        strAccount = (*mi).second;
+
+    int64 nAmount = AmountFromValue(params[2]);
+    int nMinDepth = 1;
+    if (params.size() > 3)
+        nMinDepth = params[3].get_int();
+
+    CWalletTx wtx;
+    wtx.strFromAccount = strAccount;
+    if (params.size() > 4 && params[4].type() != null_type && !params[4].get_str().empty())
+        wtx.mapValue["comment"] = params[4].get_str();
+    if (params.size() > 5 && params[5].type() != null_type && !params[5].get_str().empty())
+        wtx.mapValue["to"]      = params[5].get_str();
+
+    EnsureWalletIsUnlocked();
+
+    // Check funds
+    int64 nBalance = pwalletMain->GetAddressBalance(fromAddress.Get());
+    if (nAmount > nBalance)
+        throw JSONRPCError(RPC_WALLET_INSUFFICIENT_FUNDS, "Address has insufficient funds");
+
+    // Send
+    string strError = pwalletMain->SendMoneyFromAddressToDestination(fromAddress.Get(), address.Get(), nAmount, wtx);
+    if (strError != "")
+        throw JSONRPCError(RPC_WALLET_ERROR, strError);
+
+    return wtx.GetHash().GetHex();
 }

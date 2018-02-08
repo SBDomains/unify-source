@@ -186,6 +186,8 @@ public:
     int64 GetBalance() const;
     int64 GetUnconfirmedBalance() const;
     int64 GetImmatureBalance() const;
+    const std::string& GetAccountName(const CScript& scriptPubKey) const;
+    int64 GetLegacyBalance(int minDepth, const std::string* account) const;
     bool CreateTransaction(const std::vector<std::pair<CScript, int64> >& vecSend,
                            CWalletTx& wtxNew, CReserveKey& reservekey, int64& nFeeRet, std::string& strFailReason, const CCoinControl *coinControl=NULL);
     bool CreateTransaction(CScript scriptPubKey, int64 nValue,
@@ -199,6 +201,15 @@ public:
 
     std::string SendMoney(CScript scriptPubKey, int64 nValue, CWalletTx& wtxNew, bool fAskFee=false);
     std::string SendMoneyToDestination(const CTxDestination &address, int64 nValue, CWalletTx& wtxNew, bool fAskFee=false);
+
+    // ihook98
+    void AvailableCoinsByAddress(const CTxDestination &fromAddress, std::vector<COutput>& vCoins, bool fOnlyConfirmed=true, const CCoinControl *coinControl=NULL) const;
+    bool SelectCoinsFromAddress(const CTxDestination &fromAddress, int64 nTargetValue, std::set<std::pair<const CWalletTx*,unsigned int> >& setCoinsRet, int64& nValueRet, const CCoinControl *coinControl=NULL) const;
+    bool CreateTransaction(const CTxDestination &fromAddress, CScript scriptPubKey, int64 nValue,
+                           CWalletTx& wtxNew, CReserveKey& reservekey, int64& nFeeRet, std::string& strFailReason, const CCoinControl *coinControl=NULL);
+    std::string SendMoneyFromAddress(const CTxDestination &fromAddress, CScript scriptPubKey, int64 nValue, CWalletTx& wtxNew, bool fAskFee=false);
+    std::string SendMoneyFromAddressToDestination(const CTxDestination &fromAddress, const CTxDestination &toAddress, int64 nValue, CWalletTx& wtxNew, bool fAskFee=false);
+    int64 GetAddressBalance(const CTxDestination &address);
 
     bool NewKeyPool();
     bool TopUpKeyPool();
